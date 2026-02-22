@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_env: str = "development"
+    api_key: str = "dev-api-key"
     postgres_db: str = "basket_monitor"
     postgres_user: str = "basket"
     postgres_password: str = "basket"
@@ -10,6 +11,8 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     redis_host: str = "localhost"
     redis_port: int = 6379
+    redis_ttl_live_seconds: int = 300
+    redis_ttl_historical_seconds: int = 86400
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -1,5 +1,13 @@
 from app.models.base import Base
-from app.models.data import FXRateDaily, IngestionLog, Instrument, PriceDaily, ReturnDaily
+from app.models.data import (
+    Basket,
+    BasketLeg,
+    FXRateDaily,
+    IngestionLog,
+    Instrument,
+    PriceDaily,
+    ReturnDaily,
+)
 
 __all__ = [
     "Base",
@@ -8,4 +16,6 @@ __all__ = [
     "ReturnDaily",
     "FXRateDaily",
     "IngestionLog",
+    "Basket",
+    "BasketLeg",
 ]

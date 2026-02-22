@@ -148,8 +148,7 @@ class YahooFinanceConnector(BaseConnector):
                         status="failed",
                         rows_inserted=0,
                         error_message=(
-                            f"Instrument not found for symbol={symbol} "
-                            f"exchange={exchange}"
+                            f"Instrument not found for symbol={symbol} exchange={exchange}"
                         ),
                     )
                 )

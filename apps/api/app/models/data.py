@@ -18,7 +18,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -125,3 +125,57 @@ class IngestionLog(Base):
     status: Mapped[str | None] = mapped_column(TEXT)
     rows_inserted: Mapped[int | None] = mapped_column()
     error_message: Mapped[str | None] = mapped_column(TEXT)
+
+
+class Basket(Base):
+    __tablename__ = "baskets"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    name: Mapped[str] = mapped_column(TEXT, nullable=False)
+    description: Mapped[str | None] = mapped_column(TEXT)
+    benchmark_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("instruments.id"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+
+    legs: Mapped[list["BasketLeg"]] = relationship(
+        back_populates="basket", cascade="all, delete-orphan"
+    )
+
+
+class BasketLeg(Base):
+    __tablename__ = "basket_legs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    basket_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("baskets.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    instrument_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("instruments.id"),
+        nullable=False,
+    )
+    side: Mapped[str] = mapped_column(TEXT, nullable=False)
+    weight_override: Mapped[Decimal | None] = mapped_column(NUMERIC)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+
+    basket: Mapped[Basket] = relationship(back_populates="legs")
+    instrument: Mapped[Instrument] = relationship()
