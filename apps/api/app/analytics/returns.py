@@ -34,8 +34,13 @@ def convert_returns_to_base_currency(
             continue
         if currency not in fx_returns_df.columns:
             raise ValueError(f"Missing FX return series for currency={currency}")
-        fx_series = fx_returns_df[currency]
-        converted[symbol] = (1.0 + converted[symbol]).mul(1.0 + fx_series, fill_value=pd.NA) - 1.0
+        asset_series = pd.to_numeric(converted[symbol], errors="coerce")
+        fx_series = pd.to_numeric(fx_returns_df[currency], errors="coerce")
+        aligned = pd.concat(
+            [asset_series.rename("asset"), fx_series.rename("fx")],
+            axis=1,
+        )
+        converted[symbol] = (1.0 + aligned["asset"]) * (1.0 + aligned["fx"]) - 1.0
 
     return align_trading_calendar(converted)
 
