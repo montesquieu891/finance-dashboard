@@ -8,8 +8,9 @@ Create Date: 2026-02-22
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision: str = "0001_stage1_data_layer"
 down_revision: str | None = None
@@ -23,7 +24,12 @@ def upgrade() -> None:
 
     op.create_table(
         "instruments",
-        sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            server_default=sa.text("gen_random_uuid()"),
+            nullable=False,
+        ),
         sa.Column("symbol", sa.Text(), nullable=False),
         sa.Column("name", sa.Text(), nullable=True),
         sa.Column("asset_class", sa.Text(), nullable=False),
@@ -31,7 +37,9 @@ def upgrade() -> None:
         sa.Column("currency", sa.Text(), server_default=sa.text("'USD'"), nullable=False),
         sa.Column("multiplier", sa.Numeric(), server_default=sa.text("1"), nullable=True),
         sa.Column("is_active", sa.Boolean(), server_default=sa.text("TRUE"), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=True
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("symbol", "exchange"),
     )
@@ -92,7 +100,9 @@ def upgrade() -> None:
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
         sa.Column("source", sa.Text(), nullable=False),
         sa.Column("instrument_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("run_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=True),
+        sa.Column(
+            "run_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=True
+        ),
         sa.Column("status", sa.Text(), nullable=True),
         sa.Column("rows_inserted", sa.Integer(), nullable=True),
         sa.Column("error_message", sa.Text(), nullable=True),
