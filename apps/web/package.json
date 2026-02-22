@@ -12,8 +12,13 @@
         "openapi-ts": "openapi-typescript http://localhost:8000/openapi.json -o src/types/api.generated.ts"
     },
     "dependencies": {
+        "@tanstack/react-query": "^5.90.21",
+        "date-fns": "^4.1.0",
+        "ky": "^1.14.3",
         "react": "^18.3.1",
-        "react-dom": "^18.3.1"
+        "react-dom": "^18.3.1",
+        "recharts": "^3.7.0",
+        "zustand": "^5.0.11"
     },
     "devDependencies": {
         "@eslint/js": "^9.20.0",
