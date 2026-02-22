@@ -11,9 +11,9 @@ import yfinance as yf  # type: ignore[import-untyped]
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.analytics.returns import rebuild_returns_for_instrument
 from app.db import create_session_factory
 from app.ingestion.base import BaseConnector, IngestionResult
+from app.ingestion.returns_cache import rebuild_returns_for_instrument
 from app.models import IngestionLog, Instrument, PriceDaily
 
 
