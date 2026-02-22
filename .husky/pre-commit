@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -e
+
+if [ -x "apps/api/.venv/Scripts/python.exe" ]; then
+  PYTHON_BIN="apps/api/.venv/Scripts/python.exe"
+elif [ -x "apps/api/.venv/bin/python" ]; then
+  PYTHON_BIN="apps/api/.venv/bin/python"
+else
+  echo "Python virtual environment not found at apps/api/.venv"
+  exit 1
+fi
+
+"$PYTHON_BIN" -m ruff check apps/api
+"$PYTHON_BIN" -m mypy apps/api/app
+corepack pnpm --filter @basket-monitor/web lint
+corepack pnpm --filter @basket-monitor/web typecheck

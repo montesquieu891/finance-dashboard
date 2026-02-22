@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: basket-monitor-api
+Version: 0.1.0
+Summary: Basket Monitor FastAPI backend
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi<0.116.0,>=0.115.8
+Requires-Dist: uvicorn[standard]<0.35.0,>=0.34.0
+Requires-Dist: pydantic<3.0.0,>=2.10.6
+Requires-Dist: pydantic-settings<3.0.0,>=2.7.1
+Requires-Dist: sqlalchemy<3.0.0,>=2.0.38
+Requires-Dist: asyncpg<0.31.0,>=0.30.0
+Requires-Dist: redis<6.0.0,>=5.2.1
+Provides-Extra: dev
+Requires-Dist: ruff<0.10.0,>=0.9.7; extra == "dev"
+Requires-Dist: mypy<2.0.0,>=1.15.0; extra == "dev"
+Requires-Dist: pytest<9.0.0,>=8.3.4; extra == "dev"
+
+# Basket Monitor API
+
+Stage 0 backend shell.
