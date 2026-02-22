@@ -1,6 +1,8 @@
 import type { components, operations } from './api.generated'
 
-export type Instrument = components['schemas']['InstrumentResponse']
+export type Instrument = components['schemas']['InstrumentResponse'] & {
+    ingesting?: boolean
+}
 export type BasketLegCreate = components['schemas']['BasketLegCreate']
 export type BasketCreateRequest = components['schemas']['BasketCreateRequest']
 export type BasketResponse = components['schemas']['BasketResponse']
@@ -22,4 +24,48 @@ export interface HealthResponse {
     redis: string
     environment: string
     data_freshness?: string | null
+}
+
+export interface InstrumentIngestionStatusResponse {
+    status: 'complete' | 'ingesting' | 'failed'
+    rows: number
+    last_updated: string | null
+}
+
+export interface FactorDefinition {
+    code: string
+    name: string
+    category: string
+    proxy_symbol: string
+}
+
+export interface FactorsRequest {
+    config: BasketConfig
+    factor_codes?: string[]
+    rolling_window?: number
+}
+
+export interface FactorExposurePoint {
+    date: string
+    exposures: Record<string, number>
+    alpha: number
+    r2: number
+    regime: string
+}
+
+export interface FactorAttributionPoint {
+    factor: string
+    contribution: number
+}
+
+export interface FactorCorrelation {
+    factors: string[]
+    matrix: number[][]
+}
+
+export interface FactorsResponse {
+    factors: FactorDefinition[]
+    exposures: FactorExposurePoint[]
+    attribution: FactorAttributionPoint[]
+    factor_correlation: FactorCorrelation
 }

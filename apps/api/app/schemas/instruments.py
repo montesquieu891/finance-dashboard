@@ -14,6 +14,13 @@ class InstrumentResponse(BaseModel):
     asset_class: str
     exchange: str | None
     currency: str
+    ingesting: bool = False
+
+
+class InstrumentIngestionStatusResponse(BaseModel):
+    status: str
+    rows: int
+    last_updated: str | None
 
 
 class PriceDailyResponse(BaseModel):

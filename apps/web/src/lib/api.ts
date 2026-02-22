@@ -5,7 +5,11 @@ import type {
     BasketCreateRequest,
     BasketResponse,
     CorrelationResponse,
+    FactorDefinition,
+    FactorsRequest,
+    FactorsResponse,
     HealthResponse,
+    InstrumentIngestionStatusResponse,
     PerformanceResponse,
     PricePoint,
     RiskResponse,
@@ -46,13 +50,17 @@ const toApiError = async (error: unknown): Promise<Error> => {
 }
 
 export const api = {
-    async searchInstruments(query: string): Promise<SearchInstrumentsResponse> {
+    async searchInstruments(
+        query: string,
+        source: 'auto' | 'db_only' = 'auto',
+    ): Promise<SearchInstrumentsResponse> {
         try {
             return await client
                 .get('instruments/search', {
                     searchParams: {
                         q: query,
                         limit: '20',
+                        source,
                     },
                 })
                 .json<SearchInstrumentsResponse>()
@@ -95,6 +103,15 @@ export const api = {
             throw await toApiError(error)
         }
     },
+    async getInstrumentIngestionStatus(instrumentId: string): Promise<InstrumentIngestionStatusResponse> {
+        try {
+            return await client
+                .get(`instruments/${instrumentId}/ingestion_status`)
+                .json<InstrumentIngestionStatusResponse>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
     async getPerformance(config: BasketConfig): Promise<PerformanceResponse> {
         try {
             return await client.post('analytics/performance', { json: config }).json<PerformanceResponse>()
@@ -128,6 +145,20 @@ export const api = {
     async getHealth(): Promise<HealthResponse> {
         try {
             return await healthClient.get('health').json<HealthResponse>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async listFactorDefinitions(): Promise<FactorDefinition[]> {
+        try {
+            return await client.get('analytics/factors/definitions').json<FactorDefinition[]>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async getFactors(payload: FactorsRequest): Promise<FactorsResponse> {
+        try {
+            return await client.post('analytics/factors', { json: payload }).json<FactorsResponse>()
         } catch (error) {
             throw await toApiError(error)
         }

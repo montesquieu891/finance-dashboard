@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { BasketSidebar } from './features/basket/BasketSidebar'
 import { CorrelationTab } from './features/correlation/CorrelationTab'
+import { FactorsTab } from './features/factors/FactorsTab'
 import { PerformanceTab } from './features/performance/PerformanceTab'
 import { RiskTab } from './features/risk/RiskTab'
 import { WeightsTab } from './features/weights/WeightsTab'
@@ -90,8 +91,8 @@ function App(): JSX.Element {
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`rounded-sm border px-3 py-1 text-sm transition-colors duration-150 ${tab.id === activeTab
-                                        ? 'border-[#00ff9d] text-[#00ff9d] shadow-[0_0_8px_rgba(0,255,157,0.22)]'
-                                        : 'border-[#1a1a1a] bg-[#080808] text-[#8a8a8a] hover:bg-[#0d0d0d] hover:text-[#d7d7d7]'
+                                    ? 'border-[#00ff9d] text-[#00ff9d] shadow-[0_0_8px_rgba(0,255,157,0.22)]'
+                                    : 'border-[#1a1a1a] bg-[#080808] text-[#8a8a8a] hover:bg-[#0d0d0d] hover:text-[#d7d7d7]'
                                     }`}
                             >
                                 {tab.label}
@@ -126,6 +127,12 @@ function App(): JSX.Element {
                     {runtimeConfig !== null && activeTab === 'correlation' ? (
                         <ErrorBoundary>
                             <CorrelationTab config={runtimeConfig} />
+                        </ErrorBoundary>
+                    ) : null}
+
+                    {runtimeConfig !== null && activeTab === 'factors' ? (
+                        <ErrorBoundary>
+                            <FactorsTab config={runtimeConfig} />
                         </ErrorBoundary>
                     ) : null}
                 </section>

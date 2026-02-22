@@ -12,6 +12,8 @@ from app.errors import APIError, api_error_handler, error_payload, validation_er
 from app.models import ReturnDaily
 from app.routers.baskets import router as baskets_router
 from app.routers.correlation import router as correlation_router
+from app.routers.factors import router as factors_router
+from app.routers.factors_catalog import router as factors_catalog_router
 from app.routers.instruments import router as instruments_router
 from app.routers.performance import router as performance_router
 from app.routers.risk import router as risk_router
@@ -24,6 +26,8 @@ app.include_router(performance_router, prefix="/api/v1")
 app.include_router(weights_router, prefix="/api/v1")
 app.include_router(risk_router, prefix="/api/v1")
 app.include_router(correlation_router, prefix="/api/v1")
+app.include_router(factors_router, prefix="/api/v1")
+app.include_router(factors_catalog_router, prefix="/api/v1")
 
 app.add_exception_handler(APIError, cast(Any, api_error_handler))
 app.add_exception_handler(RequestValidationError, cast(Any, validation_error_handler))

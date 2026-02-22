@@ -179,3 +179,58 @@ class BasketLeg(Base):
 
     basket: Mapped[Basket] = relationship(back_populates="legs")
     instrument: Mapped[Instrument] = relationship()
+
+
+class FactorDefinition(Base):
+    __tablename__ = "factor_definitions"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_factor_definitions_code"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    code: Mapped[str] = mapped_column(TEXT, nullable=False)
+    name: Mapped[str] = mapped_column(TEXT, nullable=False)
+    category: Mapped[str] = mapped_column(TEXT, nullable=False)
+    proxy_symbol: Mapped[str] = mapped_column(TEXT, nullable=False)
+    proxy_instrument_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("instruments.id"),
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+
+    proxy_instrument: Mapped[Instrument | None] = relationship()
+
+
+class Factor(Base):
+    __tablename__ = "factors"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_factors_code"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    code: Mapped[str] = mapped_column(TEXT, nullable=False)
+    name: Mapped[str] = mapped_column(TEXT, nullable=False)
+    category: Mapped[str] = mapped_column(TEXT, nullable=False)
+    factor_type: Mapped[str] = mapped_column(TEXT, nullable=False)
+    proxy_symbol: Mapped[str] = mapped_column(TEXT, nullable=False)
+    proxy_instrument_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("instruments.id"),
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+
+    proxy_instrument: Mapped[Instrument | None] = relationship()

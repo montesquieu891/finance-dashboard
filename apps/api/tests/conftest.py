@@ -10,7 +10,17 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.main import app
-from app.models import Base, Basket, BasketLeg, IngestionLog, Instrument, PriceDaily, ReturnDaily
+from app.models import (
+    Base,
+    Basket,
+    BasketLeg,
+    Factor,
+    FactorDefinition,
+    IngestionLog,
+    Instrument,
+    PriceDaily,
+    ReturnDaily,
+)
 
 
 def _sync_dsn() -> str:
@@ -32,6 +42,8 @@ def db_seed() -> dict[str, str]:
     engine = create_engine(_sync_dsn())
     with Session(engine) as session:
         session.execute(delete(IngestionLog))
+        session.execute(delete(Factor))
+        session.execute(delete(FactorDefinition))
         session.execute(delete(BasketLeg))
         session.execute(delete(Basket))
         session.execute(delete(ReturnDaily))

@@ -12,7 +12,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { LoadingSkeleton } from '../../components/LoadingSkeleton'
 import { StatCard } from '../../components/StatCard'
-import { usePerformanceQuery } from '../../hooks/useAnalyticsQueries'
+import { useFactorsQuery, usePerformanceQuery } from '../../hooks/useAnalyticsQueries'
 import { buildXAxisFormatter, diffDays, fmtDate, fmtMultiple, fmtPct } from '../../lib/formatters'
 import type { BasketConfig, PerformanceResponse } from '../../types/domain'
 
@@ -49,6 +49,7 @@ const rollingVol = (indexedSeries: Array<{ date: string; basket_return: number }
 export function PerformanceTab({ config }: PerformanceTabProps): JSX.Element {
     const queryClient = useQueryClient()
     const query = usePerformanceQuery(config)
+    const factorsQuery = useFactorsQuery(config, [], 63)
 
     if (query.isLoading) {
         return (
@@ -69,6 +70,21 @@ export function PerformanceTab({ config }: PerformanceTabProps): JSX.Element {
     }
 
     const { series, metrics } = query.data
+    const regimeIndex = { growth: 0, inflation: 1, 'risk-off': 2 }
+    const regimeByDate = new Map((factorsQuery.data?.exposures ?? []).map((item) => [item.date, item.regime]))
+    const regimeSeries = series
+        .map((point) => {
+            const regime = regimeByDate.get(point.date)
+            if (!regime) {
+                return null
+            }
+            return {
+                date: point.date,
+                basket_return: point.basket_return,
+                regime_index: regimeIndex[regime as keyof typeof regimeIndex],
+            }
+        })
+        .filter((item): item is { date: string; basket_return: number; regime_index: number } => item !== null)
     const volSeries = rollingVol(series)
     const xTickFormatter = buildXAxisFormatter(config.start_date, config.end_date)
     const xInterval = diffDays(config.start_date, config.end_date) > 90 ? 6 : 0
@@ -173,6 +189,32 @@ export function PerformanceTab({ config }: PerformanceTabProps): JSX.Element {
                     </div>
                 </div>
             </ErrorBoundary>
+
+            {regimeSeries.length > 0 ? (
+                <ErrorBoundary>
+                    <div className="rounded border border-[#1a1a1a] bg-[#080808] p-4">
+                        <h3 className="ui-label mb-3 font-semibold text-[#d7d7d7]">Regime Overlay</h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={regimeSeries}>
+                                    <CartesianGrid stroke="#1a1a1a" strokeDasharray="4 4" />
+                                    <XAxis
+                                        dataKey="date"
+                                        tickFormatter={xTickFormatter}
+                                        interval={xInterval}
+                                        stroke="#8a8a8a"
+                                    />
+                                    <YAxis yAxisId="left" stroke="#8a8a8a" />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#8a8a8a" domain={[0, 2]} ticks={[0, 1, 2]} />
+                                    <Tooltip labelFormatter={formatTooltipLabel} />
+                                    <Line yAxisId="left" type="monotone" dataKey="basket_return" stroke="#00ff9d" dot={false} />
+                                    <Line yAxisId="right" type="stepAfter" dataKey="regime_index" stroke="#f5a623" dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </ErrorBoundary>
+            ) : null}
         </div>
     )
 }

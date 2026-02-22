@@ -1,7 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { useBasketsQuery } from '../../hooks/useAnalyticsQueries'
 import { useCreateBasket, useLoadBasket } from '../../hooks/useBasketMutations'
+import { useLegIngestionStatus } from '../../hooks/useLegIngestionStatus'
 import { useInstrumentSearch } from '../../hooks/useInstrumentSearch'
 import { useInstrumentSnapshots } from '../../hooks/useInstrumentSnapshots'
 import { REBALANCE_FREQS, WEIGHT_METHODS } from '../../lib/constants'
@@ -9,6 +11,7 @@ import { fmtBps, fmtCurrency, fmtPct } from '../../lib/formatters'
 import { useBasketStore } from '../../stores/basketStore'
 
 export function BasketSidebar(): JSX.Element {
+    const queryClient = useQueryClient()
     const {
         basketId,
         basketName,
@@ -31,6 +34,19 @@ export function BasketSidebar(): JSX.Element {
     const basketsQuery = useBasketsQuery()
     const searchQueryResult = useInstrumentSearch(searchQuery)
     const snapshotsQuery = useInstrumentSnapshots(searchQueryResult.data ?? [])
+    const ingestionStatus = useLegIngestionStatus(legs)
+    const previousStatusRef = useRef<Record<string, 'complete' | 'ingesting' | 'failed'>>({})
+
+    useEffect(() => {
+        ingestionStatus.statusByInstrumentId.forEach((status, instrumentId) => {
+            const previousStatus = previousStatusRef.current[instrumentId]
+            if (previousStatus === 'ingesting' && status === 'complete') {
+                queryClient.invalidateQueries({ queryKey: ['analytics'] })
+                queryClient.invalidateQueries({ queryKey: ['instrument-prices', instrumentId] })
+            }
+            previousStatusRef.current[instrumentId] = status
+        })
+    }, [ingestionStatus.statusByInstrumentId, queryClient])
 
     const canApply = useMemo(() => legs.length > 0 && !createBasketMutation.isPending, [legs.length, createBasketMutation.isPending])
 
@@ -96,6 +112,10 @@ export function BasketSidebar(): JSX.Element {
 
                     {searchQueryResult.isLoading ? (
                         <p className="text-xs text-[#8a8a8a]">Searching instruments…</p>
+                    ) : null}
+
+                    {searchQuery.trim().length >= 2 && searchQueryResult.isFetching ? (
+                        <p className="text-xs text-[#f5a623]">⏳ Live lookup in progress…</p>
                     ) : null}
 
                     {searchQueryResult.error ? (
@@ -181,10 +201,23 @@ export function BasketSidebar(): JSX.Element {
                                 className="ui-input mt-2 w-full px-2 py-1"
                                 placeholder="Manual weight override"
                             />
+
+                            {(() => {
+                                const status = ingestionStatus.statusByInstrumentId.get(leg.instrument_id)
+                                if (status === 'ingesting') {
+                                    return <p className="mt-2 text-xs text-[#f5a623]">Fetching price history...</p>
+                                }
+                                if (status === 'failed') {
+                                    return <p className="mt-2 text-xs text-[#ff3d5a]">Price ingestion failed.</p>
+                                }
+                                return null
+                            })()}
                         </div>
                     ))}
                 </div>
             </div>
+
+            {ingestionStatus.hasPolling ? <p className="mt-2 text-xs text-[#8a8a8a]">Polling ingestion status every 3s…</p> : null}
 
             <div className="mt-4 space-y-2 border-t border-[#1a1a1a] pt-4">
                 <label className="ui-label">Weight method</label>

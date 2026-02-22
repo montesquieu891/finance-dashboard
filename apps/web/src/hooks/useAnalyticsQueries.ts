@@ -64,3 +64,26 @@ export const useBasketsQuery = () =>
         queryFn: () => api.listBaskets(),
         staleTime: 30_000,
     })
+
+export const useFactorDefinitionsQuery = () =>
+    useQuery({
+        queryKey: ['analytics', 'factors', 'definitions'],
+        queryFn: () => api.listFactorDefinitions(),
+        staleTime: 300_000,
+    })
+
+export const useFactorsQuery = (
+    config: BasketConfig | null,
+    factorCodes: string[],
+    rollingWindow = 63,
+) =>
+    useQuery({
+        queryKey: ['analytics', 'factors', config, factorCodes, rollingWindow],
+        queryFn: () => {
+            if (!config) {
+                throw new Error('Basket config is missing')
+            }
+            return api.getFactors({ config, factor_codes: factorCodes, rolling_window: rollingWindow })
+        },
+        enabled: config !== null,
+    })

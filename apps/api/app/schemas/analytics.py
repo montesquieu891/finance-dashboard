@@ -75,3 +75,57 @@ class RiskResponse(BaseModel):
 class CorrelationResponse(BaseModel):
     symbols: list[str]
     matrix: list[list[float]]
+
+
+class FactorDefinitionResponse(BaseModel):
+    code: str
+    name: str
+    category: str
+    proxy_symbol: str
+
+
+class FactorResponse(BaseModel):
+    id: uuid.UUID
+    code: str
+    name: str
+    category: str
+    factor_type: str
+    proxy_symbol: str
+    is_active: bool
+
+
+class FactorsRequest(BaseModel):
+    config: BasketConfigRequest
+    factor_codes: list[str] | None = None
+    rolling_window: int = Field(63, ge=20, le=252)
+
+
+class FactorsExposuresRequest(BaseModel):
+    config: BasketConfigRequest
+    factor_ids: list[uuid.UUID] = Field(min_length=1)
+    rolling_window: int = Field(63, ge=20, le=252)
+
+
+class FactorExposurePoint(BaseModel):
+    date: date
+    exposures: dict[str, float]
+    alpha: float
+    r2: float
+    regime: str
+
+
+class FactorAttributionPoint(BaseModel):
+    factor: str
+    contribution: float
+
+
+class FactorCorrelationResponse(BaseModel):
+    factors: list[str]
+    matrix: list[list[float]]
+
+
+class FactorsResponse(BaseModel):
+    factors: list[FactorDefinitionResponse]
+    exposures: list[FactorExposurePoint]
+    attribution: list[FactorAttributionPoint]
+    factor_correlation: FactorCorrelationResponse
