@@ -1,9 +1,15 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_env: str = "development"
+    app_env: str = Field(
+        default="development",
+        validation_alias=AliasChoices("APP_ENV", "ENVIRONMENT"),
+    )
     api_key: str = "dev-api-key"
+    slack_webhook_url: str | None = None
+    slack_alert_channel: str | None = None
     postgres_db: str = "basket_monitor"
     postgres_user: str = "basket"
     postgres_password: str = "basket"
