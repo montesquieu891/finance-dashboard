@@ -4,8 +4,10 @@ from sqlalchemy import text
 from app.cache import create_redis_client
 from app.config import settings
 from app.db import create_engine
+from app.routers.instruments import router as instruments_router
 
 app = FastAPI(title="Basket Monitor API", version="0.1.0")
+app.include_router(instruments_router, prefix="/api/v1")
 
 
 @app.get("/health")
