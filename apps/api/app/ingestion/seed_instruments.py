@@ -191,6 +191,13 @@ async def main() -> None:
 
     async with session_factory() as session:
         for item in SEED_INSTRUMENTS:
+            multiplier_value = item.get("multiplier", Decimal("1"))
+            multiplier = (
+                multiplier_value
+                if isinstance(multiplier_value, Decimal)
+                else Decimal(str(multiplier_value))
+            )
+
             existing_result = await session.execute(
                 select(Instrument).where(
                     Instrument.symbol == item["symbol"],
@@ -207,7 +214,7 @@ async def main() -> None:
                         asset_class=item["asset_class"],
                         exchange=item["exchange"],
                         currency=item["currency"],
-                        multiplier=item.get("multiplier", Decimal("1")),
+                        multiplier=multiplier,
                         is_active=True,
                     )
                 )
@@ -216,7 +223,7 @@ async def main() -> None:
                 existing.name = str(item["name"])
                 existing.asset_class = str(item["asset_class"])
                 existing.currency = str(item["currency"])
-                existing.multiplier = item.get("multiplier", Decimal("1"))
+                existing.multiplier = multiplier
                 existing.is_active = True
                 updated += 1
 

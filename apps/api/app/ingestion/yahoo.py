@@ -4,9 +4,10 @@ import argparse
 import asyncio
 from datetime import date
 from decimal import Decimal
+from typing import SupportsInt
 
 import pandas as pd
-import yfinance as yf
+import yfinance as yf  # type: ignore[import-untyped]
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -104,6 +105,9 @@ class YahooFinanceConnector(BaseConnector):
         await session.execute(delete(PriceDaily).where(PriceDaily.instrument_id == instrument.id))
 
         for row in normalized_data.itertuples(index=False):
+            volume_value = row.volume
+            volume = int(volume_value) if isinstance(volume_value, SupportsInt) else None
+
             session.add(
                 PriceDaily(
                     instrument_id=instrument.id,
@@ -115,7 +119,7 @@ class YahooFinanceConnector(BaseConnector):
                     px_adj_close=Decimal(str(row.px_adj_close))
                     if pd.notna(row.px_adj_close)
                     else None,
-                    volume=int(row.volume) if pd.notna(row.volume) else None,
+                    volume=volume,
                 )
             )
 
