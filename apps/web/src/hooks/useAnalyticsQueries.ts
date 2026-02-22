@@ -50,3 +50,17 @@ export const useCorrelationQuery = (config: BasketConfig | null) =>
         },
         enabled: config !== null,
     })
+
+export const useHealthQuery = () =>
+    useQuery({
+        queryKey: ['health'],
+        queryFn: () => api.getHealth(),
+        refetchInterval: 60_000,
+    })
+
+export const useBasketsQuery = () =>
+    useQuery({
+        queryKey: ['baskets'],
+        queryFn: () => api.listBaskets(),
+        staleTime: 30_000,
+    })

@@ -11,6 +11,15 @@ export type RiskResponse = components['schemas']['RiskResponse']
 export type CorrelationResponse = components['schemas']['CorrelationResponse']
 export type RiskMetrics = components['schemas']['RiskMetrics']
 export type WeightMethod = components['schemas']['BasketConfigRequest']['weight_method']
+export type PricePoint = components['schemas']['PriceDailyResponse']
 
 export type SearchInstrumentsResponse =
     operations['search_instruments_api_v1_instruments_search_get']['responses'][200]['content']['application/json']
+
+export interface HealthResponse {
+    status: string
+    db: string
+    redis: string
+    environment: string
+    data_freshness?: string | null
+}

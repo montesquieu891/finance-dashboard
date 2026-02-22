@@ -6,3 +6,8 @@ export const useCreateBasket = () =>
     useMutation({
         mutationFn: api.createBasket,
     })
+
+export const useLoadBasket = () =>
+    useMutation({
+        mutationFn: api.getBasket,
+    })

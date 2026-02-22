@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-import type { BasketConfig, Instrument } from '../types/domain'
+import type { BasketConfig, BasketResponse, Instrument } from '../types/domain'
 
 export interface DraftLeg {
     instrument_id: string
@@ -25,6 +25,7 @@ interface BasketState {
     setBasketMeta: (name: string, description: string) => void
     setConfig: <K extends keyof BasketConfigDraft>(key: K, value: BasketConfigDraft[K]) => void
     setBasketId: (basketId: string | null) => void
+    loadBasket: (basket: BasketResponse) => void
 }
 
 const today = new Date()
@@ -105,4 +106,21 @@ export const useBasketStore = create<BasketState>((set) => ({
             },
         })),
     setBasketId: (basketId) => set({ basketId }),
+    loadBasket: (basket) =>
+        set((state) => ({
+            ...state,
+            basketId: basket.id,
+            basketName: basket.name,
+            basketDescription: basket.description ?? '',
+            legs: basket.legs.map((leg) => ({
+                instrument_id: leg.instrument.id,
+                side: leg.side,
+                weight_override: leg.weight_override !== null ? Number(leg.weight_override) : null,
+                instrument: leg.instrument,
+            })),
+            config: {
+                ...state.config,
+                benchmark_id: basket.benchmark_id,
+            },
+        })),
 }))

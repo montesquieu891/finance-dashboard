@@ -5,7 +5,9 @@ import type {
     BasketCreateRequest,
     BasketResponse,
     CorrelationResponse,
+    HealthResponse,
     PerformanceResponse,
+    PricePoint,
     RiskResponse,
     SearchInstrumentsResponse,
     WeightsResponse,
@@ -14,6 +16,12 @@ import { apiBaseUrl } from './constants'
 
 const client = ky.create({
     prefixUrl: apiBaseUrl,
+    headers: {
+        'X-API-Key': import.meta.env.VITE_API_KEY ?? 'dev-api-key',
+    },
+})
+
+const healthClient = ky.create({
     headers: {
         'X-API-Key': import.meta.env.VITE_API_KEY ?? 'dev-api-key',
     },
@@ -59,6 +67,34 @@ export const api = {
             throw await toApiError(error)
         }
     },
+    async listBaskets(): Promise<BasketResponse[]> {
+        try {
+            return await client.get('baskets').json<BasketResponse[]>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async getBasket(basketId: string): Promise<BasketResponse> {
+        try {
+            return await client.get(`baskets/${basketId}`).json<BasketResponse>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async getInstrumentPrices(instrumentId: string, fromDate: string, toDate: string): Promise<PricePoint[]> {
+        try {
+            return await client
+                .get(`instruments/${instrumentId}/prices`, {
+                    searchParams: {
+                        from: fromDate,
+                        to: toDate,
+                    },
+                })
+                .json<PricePoint[]>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
     async getPerformance(config: BasketConfig): Promise<PerformanceResponse> {
         try {
             return await client.post('analytics/performance', { json: config }).json<PerformanceResponse>()
@@ -85,6 +121,13 @@ export const api = {
             return await client
                 .post('analytics/correlation', { json: config })
                 .json<CorrelationResponse>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async getHealth(): Promise<HealthResponse> {
+        try {
+            return await healthClient.get('health').json<HealthResponse>()
         } catch (error) {
             throw await toApiError(error)
         }

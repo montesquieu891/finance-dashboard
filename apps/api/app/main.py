@@ -3,12 +3,13 @@ from typing import Any, cast
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 
 from app.cache import create_redis_client
 from app.config import settings
 from app.db import create_engine
 from app.errors import APIError, api_error_handler, error_payload, validation_error_handler
+from app.models import ReturnDaily
 from app.routers.baskets import router as baskets_router
 from app.routers.correlation import router as correlation_router
 from app.routers.instruments import router as instruments_router
@@ -44,14 +45,18 @@ async def require_api_key(request: Request, call_next):  # type: ignore[no-untyp
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
+async def health() -> dict[str, str | None]:
     db_status = "ok"
     redis_status = "ok"
+    data_freshness: str | None = None
 
     engine = create_engine()
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
+            latest_returns_date = await conn.scalar(select(func.max(ReturnDaily.date)))
+            if latest_returns_date is not None:
+                data_freshness = latest_returns_date.isoformat()
     except Exception:
         db_status = "error"
     finally:
@@ -70,5 +75,6 @@ async def health() -> dict[str, str]:
         "status": status,
         "db": db_status,
         "redis": redis_status,
+        "data_freshness": data_freshness,
         "environment": settings.app_env,
     }

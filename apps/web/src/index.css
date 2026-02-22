@@ -1,3 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        --bg-0: #050505;
+        --bg-1: #080808;
+        --bg-hover: #0d0d0d;
+        --border-muted: #1a1a1a;
+        --text-primary: #d7d7d7;
+        --text-muted: #8a8a8a;
+        --positive: #00ff9d;
+        --negative: #ff3d5a;
+        --warning: #f5a623;
+        --benchmark: #3d7eff;
+    }
+
+    html,
+    body,
+    #root {
+        min-height: 100%;
+        background-color: var(--bg-0);
+    }
+
+    body {
+        margin: 0;
+        color: var(--text-primary);
+        font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@layer components {
+    .ui-label {
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .ui-input {
+        border: 1px solid var(--border-muted);
+        border-radius: 0.25rem;
+        background-color: var(--bg-0);
+        color: var(--text-primary);
+    }
+
+    .ui-input:hover {
+        background-color: var(--bg-hover);
+    }
+}

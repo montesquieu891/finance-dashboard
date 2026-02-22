@@ -100,6 +100,17 @@ async def create_basket(
     return _basket_response(created)
 
 
+@router.get("", response_model=list[BasketResponse])
+async def list_baskets(db: AsyncSession = Depends(get_db)) -> list[BasketResponse]:
+    result = await db.execute(
+        select(Basket)
+        .order_by(Basket.created_at.desc())
+        .options(selectinload(Basket.legs).selectinload(BasketLeg.instrument))
+    )
+    baskets = result.scalars().all()
+    return [_basket_response(basket) for basket in baskets]
+
+
 @router.get("/{basket_id}", response_model=BasketResponse)
 async def get_basket(
     basket_id: uuid.UUID,

@@ -1,13 +1,16 @@
 import { useMemo } from 'react'
 
-import { useCreateBasket } from '../../hooks/useBasketMutations'
+import { useBasketsQuery } from '../../hooks/useAnalyticsQueries'
+import { useCreateBasket, useLoadBasket } from '../../hooks/useBasketMutations'
 import { useInstrumentSearch } from '../../hooks/useInstrumentSearch'
+import { useInstrumentSnapshots } from '../../hooks/useInstrumentSnapshots'
 import { REBALANCE_FREQS, WEIGHT_METHODS } from '../../lib/constants'
-import { fmtBps } from '../../lib/formatters'
+import { fmtBps, fmtCurrency, fmtPct } from '../../lib/formatters'
 import { useBasketStore } from '../../stores/basketStore'
 
 export function BasketSidebar(): JSX.Element {
     const {
+        basketId,
         basketName,
         basketDescription,
         legs,
@@ -20,79 +23,128 @@ export function BasketSidebar(): JSX.Element {
         setConfig,
         setBasketId,
         setLegWeightOverride,
+        loadBasket,
     } = useBasketStore()
 
     const createBasketMutation = useCreateBasket()
+    const loadBasketMutation = useLoadBasket()
+    const basketsQuery = useBasketsQuery()
     const searchQueryResult = useInstrumentSearch(searchQuery)
+    const snapshotsQuery = useInstrumentSnapshots(searchQueryResult.data ?? [])
 
     const canApply = useMemo(() => legs.length > 0 && !createBasketMutation.isPending, [legs.length, createBasketMutation.isPending])
 
     return (
-        <aside className="h-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-4">
-            <h2 className="text-sm font-semibold text-slate-200">Basket Builder</h2>
+        <aside className="h-full overflow-y-auto rounded border border-[#1a1a1a] bg-[#080808] p-4">
+            <h2 className="text-sm font-semibold tracking-[0.08em] text-[#d7d7d7]">Basket Builder</h2>
+
+            <div className="mt-3">
+                <label className="ui-label">Saved baskets</label>
+                <select
+                    value={basketId ?? ''}
+                    onChange={(event) => {
+                        const selectedBasketId = event.target.value
+                        if (!selectedBasketId) {
+                            return
+                        }
+                        loadBasketMutation.mutate(selectedBasketId, {
+                            onSuccess: (basket) => {
+                                loadBasket(basket)
+                            },
+                        })
+                    }}
+                    className="ui-input mt-1 w-full px-2 py-1 text-sm"
+                >
+                    <option value="">Select basket...</option>
+                    {basketsQuery.data?.map((basket) => (
+                        <option key={basket.id} value={basket.id}>
+                            {basket.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
 
             <div className="mt-3 space-y-2">
                 <input
                     value={basketName}
                     onChange={(event) => setBasketMeta(event.target.value, basketDescription)}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                    className="ui-input w-full px-2 py-1 text-sm"
                     placeholder="Basket name"
                 />
                 <input
                     value={basketDescription}
                     onChange={(event) => setBasketMeta(basketName, event.target.value)}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                    className="ui-input w-full px-2 py-1 text-sm"
                     placeholder="Description"
                 />
             </div>
 
             <div className="mt-4">
-                <label className="text-xs text-slate-400">Instrument search</label>
+                <label className="ui-label">Instrument search</label>
                 <input
+                    id="instrument-search-input"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                    className="ui-input mt-1 w-full px-2 py-1 text-sm"
                     placeholder="AAPL"
                 />
 
                 <div className="mt-2 max-h-44 space-y-1 overflow-y-auto">
                     {searchQuery.trim().length < 2 ? (
-                        <p className="text-xs text-slate-400">Type at least 2 characters to search.</p>
+                        <p className="text-xs text-[#8a8a8a]">Type at least 2 characters to search.</p>
                     ) : null}
 
                     {searchQueryResult.isLoading ? (
-                        <p className="text-xs text-slate-400">Searching instruments…</p>
+                        <p className="text-xs text-[#8a8a8a]">Searching instruments…</p>
                     ) : null}
 
                     {searchQueryResult.error ? (
-                        <p className="text-xs text-rose-300">{searchQueryResult.error.message}</p>
+                        <p className="text-xs text-[#ff3d5a]">{searchQueryResult.error.message}</p>
                     ) : null}
 
                     {searchQuery.trim().length >= 2 &&
                         searchQueryResult.data &&
                         searchQueryResult.data.length === 0 ? (
-                        <p className="text-xs text-slate-400">No instruments found.</p>
+                        <p className="text-xs text-[#8a8a8a]">No instruments found.</p>
                     ) : null}
 
                     {searchQueryResult.data?.map((instrument) => (
                         <div
                             key={instrument.id}
-                            className="rounded border border-slate-700 bg-slate-950 p-2 text-xs"
+                            className="rounded border border-[#1a1a1a] bg-[#050505] p-2 text-xs"
                         >
-                            <div className="font-medium text-slate-200">{instrument.symbol}</div>
-                            <div className="text-slate-400">{instrument.name ?? instrument.asset_class}</div>
+                            <div className="font-medium text-[#d7d7d7]">{instrument.symbol}</div>
+                            <div className="text-[#8a8a8a]">{instrument.name ?? instrument.asset_class}</div>
+                            <div className="text-[#8a8a8a]">
+                                {instrument.asset_class.toUpperCase()} ·{' '}
+                                {(() => {
+                                    const snapshot = snapshotsQuery.snapshots.get(instrument.id)
+                                    if (!snapshot || snapshot.lastPrice === null) {
+                                        return '--'
+                                    }
+                                    return fmtCurrency(snapshot.lastPrice)
+                                })()}
+                                {' · '}
+                                {(() => {
+                                    const snapshot = snapshotsQuery.snapshots.get(instrument.id)
+                                    if (!snapshot || snapshot.dailyReturn === null) {
+                                        return '--'
+                                    }
+                                    return fmtPct(snapshot.dailyReturn)
+                                })()}
+                            </div>
                             <div className="mt-2 flex gap-2">
                                 <button
                                     type="button"
                                     onClick={() => addLeg(instrument, 'long')}
-                                    className="rounded bg-emerald-700 px-2 py-1 text-white"
+                                    className="rounded-sm border border-[#1a1a1a] px-2 py-1 text-[#00ff9d] transition-colors duration-150 hover:bg-[#0d0d0d]"
                                 >
                                     + Long
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => addLeg(instrument, 'short')}
-                                    className="rounded bg-amber-700 px-2 py-1 text-white"
+                                    className="rounded-sm border border-[#1a1a1a] px-2 py-1 text-[#ff3d5a] transition-colors duration-150 hover:bg-[#0d0d0d]"
                                 >
                                     + Short
                                 </button>
@@ -103,18 +155,18 @@ export function BasketSidebar(): JSX.Element {
             </div>
 
             <div className="mt-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Legs</h3>
+                <h3 className="ui-label font-semibold">Legs</h3>
                 <div className="mt-2 space-y-2">
                     {legs.map((leg) => (
-                        <div key={`${leg.instrument_id}-${leg.side}`} className="rounded border border-slate-700 p-2 text-xs">
+                        <div key={`${leg.instrument_id}-${leg.side}`} className="rounded border border-[#1a1a1a] bg-[#050505] p-2 text-xs">
                             <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-200">
+                                <span className={`font-medium ${leg.side === 'long' ? 'text-[#00ff9d]' : 'text-[#ff3d5a]'}`}>
                                     {leg.instrument.symbol} · {leg.side}
                                 </span>
                                 <button
                                     type="button"
                                     onClick={() => removeLeg(leg.instrument_id, leg.side)}
-                                    className="text-rose-300"
+                                    className="text-[#ff3d5a]"
                                 >
                                     remove
                                 </button>
@@ -126,7 +178,7 @@ export function BasketSidebar(): JSX.Element {
                                     const nextValue = event.target.value === '' ? null : Number(event.target.value)
                                     setLegWeightOverride(leg.instrument_id, leg.side, Number.isNaN(nextValue) ? null : nextValue)
                                 }}
-                                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
+                                className="ui-input mt-2 w-full px-2 py-1"
                                 placeholder="Manual weight override"
                             />
                         </div>
@@ -134,12 +186,12 @@ export function BasketSidebar(): JSX.Element {
                 </div>
             </div>
 
-            <div className="mt-4 space-y-2 border-t border-slate-700 pt-4">
-                <label className="text-xs text-slate-400">Weight method</label>
+            <div className="mt-4 space-y-2 border-t border-[#1a1a1a] pt-4">
+                <label className="ui-label">Weight method</label>
                 <select
                     value={config.weight_method}
                     onChange={(event) => setConfig('weight_method', event.target.value as typeof config.weight_method)}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                    className="ui-input w-full px-2 py-1 text-sm"
                 >
                     {WEIGHT_METHODS.map((method) => (
                         <option key={method.value} value={method.value}>
@@ -153,13 +205,13 @@ export function BasketSidebar(): JSX.Element {
                         type="date"
                         value={config.start_date}
                         onChange={(event) => setConfig('start_date', event.target.value)}
-                        className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                        className="ui-input px-2 py-1 text-sm"
                     />
                     <input
                         type="date"
                         value={config.end_date}
                         onChange={(event) => setConfig('end_date', event.target.value)}
-                        className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                        className="ui-input px-2 py-1 text-sm"
                     />
                     <input
                         type="number"
@@ -168,7 +220,7 @@ export function BasketSidebar(): JSX.Element {
                         step={0.1}
                         value={config.gross_exposure}
                         onChange={(event) => setConfig('gross_exposure', Number(event.target.value))}
-                        className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                        className="ui-input px-2 py-1 text-sm"
                         placeholder="Gross exposure"
                     />
                     <input
@@ -177,7 +229,7 @@ export function BasketSidebar(): JSX.Element {
                         max={504}
                         value={config.lookback_days}
                         onChange={(event) => setConfig('lookback_days', Number(event.target.value))}
-                        className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                        className="ui-input px-2 py-1 text-sm"
                         placeholder="Lookback"
                     />
                 </div>
@@ -185,7 +237,7 @@ export function BasketSidebar(): JSX.Element {
                 <select
                     value={config.rebalance_freq}
                     onChange={(event) => setConfig('rebalance_freq', event.target.value as typeof config.rebalance_freq)}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                    className="ui-input w-full px-2 py-1 text-sm"
                 >
                     {REBALANCE_FREQS.map((freq) => (
                         <option key={freq.value} value={freq.value}>
@@ -198,24 +250,26 @@ export function BasketSidebar(): JSX.Element {
                     type="text"
                     value={config.benchmark_id ?? ''}
                     onChange={(event) => setConfig('benchmark_id', event.target.value || null)}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                    className="ui-input w-full px-2 py-1 text-sm"
                     placeholder="Benchmark UUID (optional)"
                 />
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                    <label className="flex items-center gap-2 text-slate-300">
+                    <label className="flex items-center gap-2 text-[#d7d7d7]">
                         <input
                             type="checkbox"
                             checked={config.include_funding_adj}
                             onChange={(event) => setConfig('include_funding_adj', event.target.checked)}
+                            className="accent-[#00ff9d]"
                         />
                         Funding Adj
                     </label>
-                    <label className="flex items-center gap-2 text-slate-300">
+                    <label className="flex items-center gap-2 text-[#d7d7d7]">
                         <input
                             type="checkbox"
                             checked={config.include_trading_costs}
                             onChange={(event) => setConfig('include_trading_costs', event.target.checked)}
+                            className="accent-[#00ff9d]"
                         />
                         Trading Costs
                     </label>
@@ -228,7 +282,7 @@ export function BasketSidebar(): JSX.Element {
                         step={0.1}
                         value={config.fee_bps}
                         onChange={(event) => setConfig('fee_bps', Number(event.target.value))}
-                        className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                        className="ui-input px-2 py-1 text-sm"
                         title={fmtBps(config.fee_bps)}
                         placeholder="Fee bps"
                     />
@@ -238,7 +292,7 @@ export function BasketSidebar(): JSX.Element {
                         step={0.1}
                         value={config.slippage_bps}
                         onChange={(event) => setConfig('slippage_bps', Number(event.target.value))}
-                        className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+                        className="ui-input px-2 py-1 text-sm"
                         title={fmtBps(config.slippage_bps)}
                         placeholder="Slippage bps"
                     />
@@ -267,13 +321,17 @@ export function BasketSidebar(): JSX.Element {
                         },
                     )
                 }}
-                className="mt-4 w-full rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="mt-4 w-full rounded-sm border border-[#1a1a1a] bg-[#050505] px-3 py-2 text-sm font-semibold text-[#00ff9d] transition-colors duration-150 hover:bg-[#0d0d0d] disabled:opacity-50"
             >
                 {createBasketMutation.isPending ? 'Applying…' : 'Apply Basket'}
             </button>
 
             {createBasketMutation.error ? (
-                <p className="mt-2 text-xs text-rose-300">{createBasketMutation.error.message}</p>
+                <p className="mt-2 text-xs text-[#ff3d5a]">{createBasketMutation.error.message}</p>
+            ) : null}
+
+            {loadBasketMutation.error ? (
+                <p className="mt-2 text-xs text-[#ff3d5a]">{loadBasketMutation.error.message}</p>
             ) : null}
         </aside>
     )

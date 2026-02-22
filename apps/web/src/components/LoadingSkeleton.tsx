@@ -3,5 +3,5 @@ interface LoadingSkeletonProps {
 }
 
 export function LoadingSkeleton({ className }: LoadingSkeletonProps): JSX.Element {
-    return <div className={`animate-pulse rounded-md bg-slate-700/60 ${className ?? ''}`} />
+    return <div className={`animate-pulse rounded-sm bg-[#0d0d0d] ${className ?? ''}`} />
 }

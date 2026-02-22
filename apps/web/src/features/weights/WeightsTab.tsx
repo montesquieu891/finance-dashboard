@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { LoadingSkeleton } from '../../components/LoadingSkeleton'
 import { useWeightsQuery } from '../../hooks/useAnalyticsQueries'
-import { fmtNumber } from '../../lib/formatters'
+import { fmtMultiple } from '../../lib/formatters'
 import type { BasketConfig } from '../../types/domain'
 
 interface WeightsTabProps {
@@ -14,9 +14,9 @@ const heatColor = (value: number): string => {
     const clamped = Math.min(1, Math.max(-1, value))
     const alpha = Math.abs(clamped)
     if (clamped >= 0) {
-        return `rgba(34,197,94,${alpha})`
+        return `rgba(0,255,157,${alpha})`
     }
-    return `rgba(239,68,68,${alpha})`
+    return `rgba(255,61,90,${alpha})`
 }
 
 export function WeightsTab({ config }: WeightsTabProps): JSX.Element {
@@ -53,15 +53,15 @@ export function WeightsTab({ config }: WeightsTabProps): JSX.Element {
 
     return (
         <div className="space-y-4">
-            <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-slate-200">Weights Table (All Methods)</h3>
+            <div className="rounded border border-[#1a1a1a] bg-[#080808] p-4">
+                <h3 className="ui-label mb-3 font-semibold text-[#d7d7d7]">Weights Table (All Methods)</h3>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full text-xs text-slate-200">
+                    <table className="min-w-full text-xs text-[#d7d7d7]">
                         <thead>
-                            <tr className="border-b border-slate-700 text-slate-400">
-                                <th className="px-2 py-2 text-left">Method</th>
+                            <tr className="border-b border-[#1a1a1a]">
+                                <th className="ui-label px-2 py-2 text-left">Method</th>
                                 {symbols.map((symbol) => (
-                                    <th key={symbol} className="px-2 py-2 text-right">
+                                    <th key={symbol} className="ui-label px-2 py-2 text-right">
                                         {symbol}
                                     </th>
                                 ))}
@@ -69,11 +69,11 @@ export function WeightsTab({ config }: WeightsTabProps): JSX.Element {
                         </thead>
                         <tbody>
                             {snapshots.map((snapshot) => (
-                                <tr key={snapshot.method} className="border-b border-slate-800">
-                                    <td className="px-2 py-2 font-medium">{snapshot.method}</td>
+                                <tr key={snapshot.method} className="border-b border-[#1a1a1a] hover:bg-[#0d0d0d]">
+                                    <td className="px-2 py-2 font-medium uppercase tracking-[0.12em]">{snapshot.method}</td>
                                     {symbols.map((symbol) => (
-                                        <td key={symbol} className="px-2 py-2 text-right">
-                                            {fmtNumber(snapshot.weights[symbol] ?? 0)}
+                                        <td key={symbol} className="px-2 py-2 text-right tabular-nums">
+                                            {fmtMultiple(snapshot.weights[symbol] ?? 0)}
                                         </td>
                                     ))}
                                 </tr>
@@ -84,16 +84,16 @@ export function WeightsTab({ config }: WeightsTabProps): JSX.Element {
             </div>
 
             <ErrorBoundary>
-                <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <h3 className="mb-3 text-sm font-semibold text-slate-200">Bar Chart ({selectedMethod.method})</h3>
+                <div className="rounded border border-[#1a1a1a] bg-[#080808] p-4">
+                    <h3 className="ui-label mb-3 font-semibold text-[#d7d7d7]">Bar Chart ({selectedMethod.method})</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData}>
-                                <CartesianGrid stroke="#334155" strokeDasharray="4 4" />
-                                <XAxis dataKey="symbol" stroke="#94a3b8" />
-                                <YAxis stroke="#94a3b8" />
-                                <Tooltip formatter={(value) => fmtNumber(value as number)} />
-                                <Bar dataKey="weight" fill="#38bdf8" />
+                                <CartesianGrid stroke="#1a1a1a" strokeDasharray="4 4" />
+                                <XAxis dataKey="symbol" stroke="#8a8a8a" />
+                                <YAxis stroke="#8a8a8a" />
+                                <Tooltip formatter={(value) => fmtMultiple(value as number)} />
+                                <Bar dataKey="weight" fill="#00ff9d" />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -101,15 +101,15 @@ export function WeightsTab({ config }: WeightsTabProps): JSX.Element {
             </ErrorBoundary>
 
             <ErrorBoundary>
-                <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <h3 className="mb-3 text-sm font-semibold text-slate-200">Weights Heatmap</h3>
+                <div className="rounded border border-[#1a1a1a] bg-[#080808] p-4">
+                    <h3 className="ui-label mb-3 font-semibold text-[#d7d7d7]">Weights Heatmap</h3>
                     <div className="overflow-x-auto">
-                        <table className="min-w-full text-xs text-slate-100">
+                        <table className="min-w-full text-xs text-[#d7d7d7]">
                             <thead>
                                 <tr>
-                                    <th className="px-2 py-2 text-left">Method</th>
+                                    <th className="ui-label px-2 py-2 text-left">Method</th>
                                     {symbols.map((symbol) => (
-                                        <th key={symbol} className="px-2 py-2 text-right">
+                                        <th key={symbol} className="ui-label px-2 py-2 text-right">
                                             {symbol}
                                         </th>
                                     ))}
@@ -117,17 +117,17 @@ export function WeightsTab({ config }: WeightsTabProps): JSX.Element {
                             </thead>
                             <tbody>
                                 {snapshots.map((snapshot) => (
-                                    <tr key={snapshot.method}>
-                                        <td className="px-2 py-2 font-medium">{snapshot.method}</td>
+                                    <tr key={snapshot.method} className="border-b border-[#1a1a1a]">
+                                        <td className="px-2 py-2 font-medium uppercase tracking-[0.12em]">{snapshot.method}</td>
                                         {symbols.map((symbol) => {
                                             const value = snapshot.weights[symbol] ?? 0
                                             return (
                                                 <td
                                                     key={symbol}
-                                                    className="px-2 py-2 text-right"
+                                                    className="px-2 py-2 text-right tabular-nums"
                                                     style={{ backgroundColor: heatColor(value) }}
                                                 >
-                                                    {fmtNumber(value)}
+                                                    {fmtMultiple(value)}
                                                 </td>
                                             )
                                         })}

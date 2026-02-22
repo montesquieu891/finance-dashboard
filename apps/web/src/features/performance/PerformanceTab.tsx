@@ -7,13 +7,14 @@ import {
     XAxis,
     YAxis,
 } from 'recharts'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { LoadingSkeleton } from '../../components/LoadingSkeleton'
 import { StatCard } from '../../components/StatCard'
 import { usePerformanceQuery } from '../../hooks/useAnalyticsQueries'
-import { fmtDate, fmtNumber, fmtPct } from '../../lib/formatters'
-import type { BasketConfig } from '../../types/domain'
+import { buildXAxisFormatter, diffDays, fmtDate, fmtMultiple, fmtPct } from '../../lib/formatters'
+import type { BasketConfig, PerformanceResponse } from '../../types/domain'
 
 interface PerformanceTabProps {
     config: BasketConfig
@@ -46,6 +47,7 @@ const rollingVol = (indexedSeries: Array<{ date: string; basket_return: number }
 }
 
 export function PerformanceTab({ config }: PerformanceTabProps): JSX.Element {
+    const queryClient = useQueryClient()
     const query = usePerformanceQuery(config)
 
     if (query.isLoading) {
@@ -68,41 +70,79 @@ export function PerformanceTab({ config }: PerformanceTabProps): JSX.Element {
 
     const { series, metrics } = query.data
     const volSeries = rollingVol(series)
+    const xTickFormatter = buildXAxisFormatter(config.start_date, config.end_date)
+    const xInterval = diffDays(config.start_date, config.end_date) > 90 ? 6 : 0
 
     const cards = [
-        { label: 'Ann Vol', value: fmtPct(metrics.annVol) },
-        { label: 'Sharpe', value: fmtNumber(metrics.sharpe) },
-        { label: 'Max Drawdown', value: fmtPct(metrics.maxDrawdown) },
-        { label: 'Calmar', value: fmtNumber(metrics.calmar) },
-        { label: 'Sortino', value: fmtNumber(metrics.sortino) },
-        { label: 'Beta', value: fmtNumber(metrics.beta) },
-        { label: 'Net Exposure', value: fmtNumber(metrics.netExposure) },
-        { label: 'Gross Exposure', value: fmtNumber(metrics.grossExposure) },
-        { label: 'Total Return', value: fmtPct(metrics.totalReturn) },
-        { label: 'Vs Benchmark', value: fmtPct(metrics.vsbenchmark) },
+        { label: 'Ann Vol', value: fmtPct(metrics.annVol), tooltip: 'Annualized volatility of basket returns.' },
+        { label: 'Sharpe', value: fmtMultiple(metrics.sharpe), tooltip: 'Risk-adjusted return per unit of volatility.' },
+        { label: 'Max Drawdown', value: fmtPct(metrics.maxDrawdown), tooltip: 'Largest peak-to-trough decline.' },
+        { label: 'Calmar', value: fmtMultiple(metrics.calmar), tooltip: 'Annual return divided by max drawdown.' },
+        { label: 'Sortino', value: fmtMultiple(metrics.sortino), tooltip: 'Risk-adjusted return using downside volatility.' },
+        { label: 'Beta', value: fmtMultiple(metrics.beta), tooltip: 'Sensitivity versus benchmark return changes.' },
+        { label: 'Net Exposure', value: fmtMultiple(metrics.netExposure), tooltip: 'Signed sum of basket weights.' },
+        { label: 'Gross Exposure', value: fmtMultiple(metrics.grossExposure), tooltip: 'Sum of absolute basket weights.' },
+        { label: 'Total Return', value: fmtPct(metrics.totalReturn), tooltip: 'Cumulative basket return over selected dates.' },
+        { label: 'Vs Benchmark', value: fmtPct(metrics.vsbenchmark), tooltip: 'Basket total return minus benchmark return.' },
     ]
+
+    const exportCsv = (): void => {
+        const cached = queryClient.getQueryData<PerformanceResponse>(['analytics', 'performance', config])
+        if (!cached) {
+            return
+        }
+
+        const header = 'date,basket_return,benchmark_return,drawdown'
+        const rows = cached.series.map(
+            (item) => `${item.date},${item.basket_return},${item.benchmark_return},${item.drawdown}`,
+        )
+        const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        const url = URL.createObjectURL(blob)
+        link.href = url
+        link.setAttribute('download', `equity-curve-${config.start_date}-to-${config.end_date}.csv`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+    }
 
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                 {cards.map((card) => (
-                    <StatCard key={card.label} label={card.label} value={card.value} />
+                    <StatCard key={card.label} label={card.label} value={card.value} tooltip={card.tooltip} />
                 ))}
             </div>
 
+            <div>
+                <button
+                    type="button"
+                    onClick={exportCsv}
+                    className="rounded-sm border border-[#1a1a1a] bg-[#050505] px-3 py-1 text-sm text-[#d7d7d7] transition-colors duration-150 hover:bg-[#0d0d0d]"
+                >
+                    Export Equity Curve CSV
+                </button>
+            </div>
+
             <ErrorBoundary>
-                <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <h3 className="mb-3 text-sm font-semibold text-slate-200">Equity Curve & Drawdown</h3>
+                <div className="rounded border border-[#1a1a1a] bg-[#080808] p-4">
+                    <h3 className="ui-label mb-3 font-semibold text-[#d7d7d7]">Equity Curve & Drawdown</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={series}>
-                                <CartesianGrid stroke="#334155" strokeDasharray="4 4" />
-                                <XAxis dataKey="date" tickFormatter={fmtDate} stroke="#94a3b8" />
-                                <YAxis stroke="#94a3b8" />
+                                <CartesianGrid stroke="#1a1a1a" strokeDasharray="4 4" />
+                                <XAxis
+                                    dataKey="date"
+                                    tickFormatter={xTickFormatter}
+                                    interval={xInterval}
+                                    stroke="#8a8a8a"
+                                />
+                                <YAxis stroke="#8a8a8a" />
                                 <Tooltip labelFormatter={formatTooltipLabel} />
-                                <Line type="monotone" dataKey="basket_return" stroke="#38bdf8" dot={false} />
-                                <Line type="monotone" dataKey="benchmark_return" stroke="#22c55e" dot={false} />
-                                <Line type="monotone" dataKey="drawdown" stroke="#f97316" dot={false} />
+                                <Line type="monotone" dataKey="basket_return" stroke="#00ff9d" dot={false} />
+                                <Line type="monotone" dataKey="benchmark_return" stroke="#3d7eff" dot={false} />
+                                <Line type="monotone" dataKey="drawdown" stroke="#ff3d5a" dot={false} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
@@ -110,19 +150,24 @@ export function PerformanceTab({ config }: PerformanceTabProps): JSX.Element {
             </ErrorBoundary>
 
             <ErrorBoundary>
-                <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-                    <h3 className="mb-3 text-sm font-semibold text-slate-200">Rolling Volatility (20D)</h3>
+                <div className="rounded border border-[#1a1a1a] bg-[#080808] p-4">
+                    <h3 className="ui-label mb-3 font-semibold text-[#d7d7d7]">Rolling Volatility (20D)</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={volSeries}>
-                                <CartesianGrid stroke="#334155" strokeDasharray="4 4" />
-                                <XAxis dataKey="date" tickFormatter={fmtDate} stroke="#94a3b8" />
-                                <YAxis stroke="#94a3b8" tickFormatter={fmtPct} />
+                                <CartesianGrid stroke="#1a1a1a" strokeDasharray="4 4" />
+                                <XAxis
+                                    dataKey="date"
+                                    tickFormatter={xTickFormatter}
+                                    interval={xInterval}
+                                    stroke="#8a8a8a"
+                                />
+                                <YAxis stroke="#8a8a8a" tickFormatter={fmtPct} />
                                 <Tooltip
                                     formatter={(value) => fmtPct(value as number)}
                                     labelFormatter={formatTooltipLabel}
                                 />
-                                <Line type="monotone" dataKey="value" stroke="#a78bfa" dot={false} />
+                                <Line type="monotone" dataKey="value" stroke="#f5a623" dot={false} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
