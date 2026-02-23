@@ -1,5 +1,5 @@
 [build]
-dockerfilePath = "apps/web/Dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "/start-nginx.sh"

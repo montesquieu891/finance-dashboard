@@ -18,7 +18,7 @@ def _sync_dsn() -> str:
 
 
 def test_api_key_required(client):
-    response = client.get("/health")
+    response = client.get("/api/v1/baskets")
     assert response.status_code == 401
     payload = response.json()
     assert payload["error"] == "UNAUTHORIZED"

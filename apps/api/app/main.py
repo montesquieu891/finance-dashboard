@@ -31,7 +31,7 @@ from app.services.live_monitor import live_monitor_service
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.app_env.lower() == "production" or os.getenv("ENVIRONMENT") == "production":
-        alembic_cfg = Config(str(Path(__file__).resolve().parents[1] / ".." / "alembic.ini"))
+        alembic_cfg = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
         command.upgrade(alembic_cfg, "head")
 
     await live_monitor_service.start()
@@ -58,7 +58,7 @@ app.add_exception_handler(RequestValidationError, cast(Any, validation_error_han
 
 @app.middleware("http")
 async def require_api_key(request: Request, call_next):  # type: ignore[no-untyped-def]
-    docs_paths = {"/docs", "/openapi.json", "/redoc"}
+    docs_paths = {"/docs", "/openapi.json", "/redoc", "/health"}
     is_production = settings.app_env.lower() == "production"
     if request.url.path in docs_paths and not is_production:
         return await call_next(request)
