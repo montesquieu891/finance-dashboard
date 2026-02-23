@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.main import app
 from app.models import (
+    AlertRule,
     Base,
     Basket,
     BasketLeg,
@@ -19,6 +20,7 @@ from app.models import (
     IngestionLog,
     Instrument,
     PriceDaily,
+    RealPosition,
     ReturnDaily,
 )
 
@@ -42,6 +44,8 @@ def db_seed() -> dict[str, str]:
     engine = create_engine(_sync_dsn())
     with Session(engine) as session:
         session.execute(delete(IngestionLog))
+        session.execute(delete(AlertRule))
+        session.execute(delete(RealPosition))
         session.execute(delete(Factor))
         session.execute(delete(FactorDefinition))
         session.execute(delete(BasketLeg))

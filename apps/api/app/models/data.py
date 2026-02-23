@@ -181,6 +181,76 @@ class BasketLeg(Base):
     instrument: Mapped[Instrument] = relationship()
 
 
+class AlertRule(Base):
+    __tablename__ = "alert_rules"
+    __table_args__ = (
+        CheckConstraint("rule_type IN ('drawdown', 'leg_stop')", name="ck_alert_rules_rule_type"),
+        CheckConstraint("threshold > 0", name="ck_alert_rules_threshold_positive"),
+        CheckConstraint(
+            "cooldown_minutes >= 1 AND cooldown_minutes <= 1440",
+            name="ck_alert_rules_cooldown_minutes_range",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    basket_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("baskets.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    instrument_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("instruments.id"),
+    )
+    name: Mapped[str] = mapped_column(TEXT, nullable=False)
+    rule_type: Mapped[str] = mapped_column(TEXT, nullable=False)
+    threshold: Mapped[Decimal] = mapped_column(NUMERIC, nullable=False)
+    cooldown_minutes: Mapped[int] = mapped_column(nullable=False, server_default=text("60"))
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
+    last_triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+
+    basket: Mapped[Basket] = relationship()
+    instrument: Mapped[Instrument | None] = relationship()
+
+
+class RealPosition(Base):
+    __tablename__ = "real_positions"
+    __table_args__ = (
+        UniqueConstraint("basket_id", "instrument_id", name="uq_real_positions_basket_instrument"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    basket_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("baskets.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    instrument_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("instruments.id"),
+        nullable=False,
+    )
+    quantity: Mapped[Decimal] = mapped_column(NUMERIC, nullable=False)
+    avg_price: Mapped[Decimal | None] = mapped_column(NUMERIC)
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+
+    basket: Mapped[Basket] = relationship()
+    instrument: Mapped[Instrument] = relationship()
+
+
 class FactorDefinition(Base):
     __tablename__ = "factor_definitions"
     __table_args__ = (

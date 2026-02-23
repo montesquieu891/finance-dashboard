@@ -10,6 +10,8 @@ from app.config import settings
 
 
 def create_redis_client() -> Redis:
+    if settings.redis_url:
+        return Redis.from_url(settings.redis_url, decode_responses=True)
     return Redis(host=settings.redis_host, port=settings.redis_port, decode_responses=True)
 
 

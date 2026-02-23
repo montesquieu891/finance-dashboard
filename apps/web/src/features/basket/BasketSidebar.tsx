@@ -4,13 +4,18 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useBasketsQuery } from '../../hooks/useAnalyticsQueries'
 import { useCreateBasket, useLoadBasket } from '../../hooks/useBasketMutations'
 import { useLegIngestionStatus } from '../../hooks/useLegIngestionStatus'
+import { useAlertRulesQuery, useCreateAlertRule, useDeleteAlertRule } from '../../hooks/useLiveMonitoring'
 import { useInstrumentSearch } from '../../hooks/useInstrumentSearch'
 import { useInstrumentSnapshots } from '../../hooks/useInstrumentSnapshots'
 import { REBALANCE_FREQS, WEIGHT_METHODS } from '../../lib/constants'
 import { fmtBps, fmtCurrency, fmtPct } from '../../lib/formatters'
 import { useBasketStore } from '../../stores/basketStore'
 
-export function BasketSidebar(): JSX.Element {
+interface BasketSidebarProps {
+    livePricesBySymbol: Record<string, { price: number; asOf: string }>
+}
+
+export function BasketSidebar({ livePricesBySymbol }: BasketSidebarProps): JSX.Element {
     const queryClient = useQueryClient()
     const {
         basketId,
@@ -35,6 +40,9 @@ export function BasketSidebar(): JSX.Element {
     const searchQueryResult = useInstrumentSearch(searchQuery)
     const snapshotsQuery = useInstrumentSnapshots(searchQueryResult.data ?? [])
     const ingestionStatus = useLegIngestionStatus(legs)
+    const alertsQuery = useAlertRulesQuery(basketId)
+    const createAlertRule = useCreateAlertRule(basketId)
+    const deleteAlertRule = useDeleteAlertRule(basketId)
     const previousStatusRef = useRef<Record<string, 'complete' | 'ingesting' | 'failed'>>({})
 
     useEffect(() => {
@@ -191,6 +199,19 @@ export function BasketSidebar(): JSX.Element {
                                     remove
                                 </button>
                             </div>
+                            <div className="mt-1 flex items-center justify-between text-[#8a8a8a]">
+                                <span>Live</span>
+                                <span className="inline-flex items-center gap-1">
+                                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00ff9d]" />
+                                    {(() => {
+                                        const live = livePricesBySymbol[leg.instrument.symbol]
+                                        if (!live) {
+                                            return '--'
+                                        }
+                                        return fmtCurrency(live.price)
+                                    })()}
+                                </span>
+                            </div>
                             <input
                                 type="number"
                                 value={leg.weight_override ?? ''}
@@ -218,6 +239,85 @@ export function BasketSidebar(): JSX.Element {
             </div>
 
             {ingestionStatus.hasPolling ? <p className="mt-2 text-xs text-[#8a8a8a]">Polling ingestion status every 3s…</p> : null}
+
+            <div className="mt-4 rounded border border-[#1a1a1a] bg-[#050505] p-3">
+                <details>
+                    <summary className="cursor-pointer text-xs font-semibold tracking-[0.06em] text-[#d7d7d7]">
+                        Alerts
+                    </summary>
+
+                    <div className="mt-3 space-y-2">
+                        <button
+                            type="button"
+                            disabled={!basketId || createAlertRule.isPending}
+                            onClick={() => {
+                                createAlertRule.mutate({
+                                    name: 'Basket drawdown 8%',
+                                    rule_type: 'drawdown',
+                                    threshold: 0.08,
+                                    cooldown_minutes: 60,
+                                    is_active: true,
+                                })
+                            }}
+                            className="w-full rounded-sm border border-[#1a1a1a] bg-[#080808] px-2 py-1 text-left text-xs text-[#f5a623] transition-colors duration-150 hover:bg-[#0d0d0d] disabled:opacity-50"
+                        >
+                            + Add drawdown alert (8%)
+                        </button>
+
+                        <button
+                            type="button"
+                            disabled={!basketId || legs.length === 0 || createAlertRule.isPending}
+                            onClick={() => {
+                                const firstLeg = legs[0]
+                                if (!firstLeg) {
+                                    return
+                                }
+                                createAlertRule.mutate({
+                                    name: `${firstLeg.instrument.symbol} stop 3%`,
+                                    rule_type: 'leg_stop',
+                                    threshold: 0.03,
+                                    cooldown_minutes: 60,
+                                    is_active: true,
+                                    instrument_id: firstLeg.instrument_id,
+                                })
+                            }}
+                            className="w-full rounded-sm border border-[#1a1a1a] bg-[#080808] px-2 py-1 text-left text-xs text-[#ff3d5a] transition-colors duration-150 hover:bg-[#0d0d0d] disabled:opacity-50"
+                        >
+                            + Add leg stop alert (first leg)
+                        </button>
+
+                        {alertsQuery.isLoading ? <p className="text-xs text-[#8a8a8a]">Loading alerts…</p> : null}
+                        {alertsQuery.error ? <p className="text-xs text-[#ff3d5a]">{alertsQuery.error.message}</p> : null}
+
+                        {alertsQuery.data?.map((rule) => (
+                            <div key={rule.id} className="rounded border border-[#1a1a1a] bg-[#080808] p-2 text-xs">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                        <p className="font-medium text-[#d7d7d7]">{rule.name}</p>
+                                        <p className="text-[#8a8a8a]">
+                                            {rule.rule_type} · threshold {fmtPct(Number(rule.threshold))} · cooldown {rule.cooldown_minutes}m
+                                        </p>
+                                        <p className="text-[#8a8a8a]">
+                                            Last trigger: {rule.last_triggered_at ? new Date(rule.last_triggered_at).toLocaleString() : 'Never'}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => deleteAlertRule.mutate(rule.id)}
+                                        className="text-[#ff3d5a]"
+                                    >
+                                        remove
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {alertsQuery.data && alertsQuery.data.length === 0 ? (
+                            <p className="text-xs text-[#8a8a8a]">No alert rules configured.</p>
+                        ) : null}
+                    </div>
+                </details>
+            </div>
 
             <div className="mt-4 space-y-2 border-t border-[#1a1a1a] pt-4">
                 <label className="ui-label">Weight method</label>

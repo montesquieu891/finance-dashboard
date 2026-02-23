@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type TabId = 'performance' | 'weights' | 'risk' | 'correlation' | 'factors'
+export type TabId = 'performance' | 'weights' | 'risk' | 'correlation' | 'factors' | 'positions'
 
 interface UiState {
     activeTab: TabId

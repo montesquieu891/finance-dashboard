@@ -69,3 +69,64 @@ export interface FactorsResponse {
     attribution: FactorAttributionPoint[]
     factor_correlation: FactorCorrelation
 }
+
+export interface LivePriceTick {
+    symbol: string
+    price: string
+    as_of: string
+}
+
+export interface LivePriceEnvelope {
+    type: 'price_tick'
+    basket_id: string | null
+    generated_at: string
+    data: LivePriceTick[]
+}
+
+export interface AlertRule {
+    id: string
+    basket_id: string
+    instrument_id: string | null
+    name: string
+    rule_type: 'drawdown' | 'leg_stop'
+    threshold: string
+    cooldown_minutes: number
+    is_active: boolean
+    last_triggered_at: string | null
+    created_at: string
+}
+
+export interface AlertRuleCreateRequest {
+    name: string
+    rule_type: 'drawdown' | 'leg_stop'
+    threshold: number
+    cooldown_minutes: number
+    is_active: boolean
+    instrument_id?: string | null
+}
+
+export interface PositionSnapshot {
+    id: string
+    instrument_id: string
+    symbol: string
+    quantity: string
+    avg_price: string | null
+    last_price: string | null
+    model_signed_weight: number
+    actual_signed_weight: number
+    drift_bps: number
+    daily_pnl: string | null
+    uploaded_at: string
+}
+
+export interface PositionsSummary {
+    gross_notional: string
+    net_notional: string
+    drift_l1: number
+    daily_pnl_total: string
+}
+
+export interface PositionsResponse {
+    rows: PositionSnapshot[]
+    summary: PositionsSummary
+}

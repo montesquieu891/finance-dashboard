@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import (
@@ -10,8 +11,23 @@ from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
+
+def _normalize_postgres_url(raw_url: str) -> str:
+    if raw_url.startswith("postgres://"):
+        return raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if raw_url.startswith("postgresql://"):
+        return raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return raw_url
+
 
 def postgres_dsn() -> str:
+    if settings.database_url:
+        normalized = _normalize_postgres_url(settings.database_url)
+        logger.info("DATABASE_URL prefix: %s", normalized[:30])
+        return normalized
+
     return (
         f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}"
         f"@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"

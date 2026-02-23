@@ -1,6 +1,8 @@
 import ky, { HTTPError } from 'ky'
 
 import type {
+    AlertRule,
+    AlertRuleCreateRequest,
     BasketConfig,
     BasketCreateRequest,
     BasketResponse,
@@ -11,6 +13,7 @@ import type {
     HealthResponse,
     InstrumentIngestionStatusResponse,
     PerformanceResponse,
+    PositionsResponse,
     PricePoint,
     RiskResponse,
     SearchInstrumentsResponse,
@@ -159,6 +162,43 @@ export const api = {
     async getFactors(payload: FactorsRequest): Promise<FactorsResponse> {
         try {
             return await client.post('analytics/factors', { json: payload }).json<FactorsResponse>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async listAlertRules(basketId: string): Promise<AlertRule[]> {
+        try {
+            return await client.get(`baskets/${basketId}/alerts`).json<AlertRule[]>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async createAlertRule(basketId: string, payload: AlertRuleCreateRequest): Promise<AlertRule> {
+        try {
+            return await client.post(`baskets/${basketId}/alerts`, { json: payload }).json<AlertRule>()
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async deleteAlertRule(alertId: string): Promise<void> {
+        try {
+            await client.delete(`baskets/alerts/${alertId}`)
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async uploadPositionsCsv(basketId: string, file: File): Promise<void> {
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+            await client.post(`baskets/${basketId}/positions/upload`, { body: formData })
+        } catch (error) {
+            throw await toApiError(error)
+        }
+    },
+    async getPositions(basketId: string): Promise<PositionsResponse> {
+        try {
+            return await client.get(`baskets/${basketId}/positions`).json<PositionsResponse>()
         } catch (error) {
             throw await toApiError(error)
         }

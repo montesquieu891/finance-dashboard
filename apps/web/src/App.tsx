@@ -5,9 +5,11 @@ import { BasketSidebar } from './features/basket/BasketSidebar'
 import { CorrelationTab } from './features/correlation/CorrelationTab'
 import { FactorsTab } from './features/factors/FactorsTab'
 import { PerformanceTab } from './features/performance/PerformanceTab'
+import { PositionsTab } from './features/positions/PositionsTab'
 import { RiskTab } from './features/risk/RiskTab'
 import { WeightsTab } from './features/weights/WeightsTab'
 import { useHealthQuery } from './hooks/useAnalyticsQueries'
+import { useLivePrices } from './hooks/useLiveMonitoring'
 import { APP_NAME, TAB_OPTIONS } from './lib/constants'
 import { fmtDate } from './lib/formatters'
 import { useBasketStore } from './stores/basketStore'
@@ -20,6 +22,7 @@ function App(): JSX.Element {
     const { activeTab, setActiveTab, sidebarCollapsed, setSidebarCollapsed } = useUiStore()
 
     const runtimeConfig: BasketConfig | null = basketId ? { ...config, basket_id: basketId } : null
+    const livePrices = useLivePrices(basketId)
     const dataFreshness = healthQuery.data?.data_freshness ?? null
     const dataFreshnessLabel = dataFreshness ? fmtDate(dataFreshness) : 'Unavailable'
     const freshnessAgeHours = dataFreshness
@@ -64,6 +67,17 @@ function App(): JSX.Element {
                         <h1 className="text-lg font-semibold tracking-[0.08em]">{APP_NAME}</h1>
                         <p className="ui-label mt-1">Data as of: {dataFreshnessLabel}</p>
                     </div>
+                    <div className="mr-3 inline-flex items-center gap-2 rounded border border-[#1a1a1a] bg-[#050505] px-2 py-1 text-xs">
+                        <span
+                            className={`h-2 w-2 rounded-full ${livePrices.connectionState === 'connected'
+                                ? 'bg-[#00ff9d]'
+                                : livePrices.connectionState === 'connecting'
+                                    ? 'bg-[#f5a623]'
+                                    : 'bg-[#ff3d5a]'
+                                }`}
+                        />
+                        <span className="text-[#8a8a8a]">Live {livePrices.connectionState}</span>
+                    </div>
                     <button
                         type="button"
                         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -81,7 +95,7 @@ function App(): JSX.Element {
             ) : null}
 
             <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[340px_1fr]">
-                {!sidebarCollapsed ? <BasketSidebar /> : <div />}
+                {!sidebarCollapsed ? <BasketSidebar livePricesBySymbol={livePrices.pricesBySymbol} /> : <div />}
 
                 <section className="space-y-4">
                     <nav className="flex flex-wrap gap-2">
@@ -133,6 +147,12 @@ function App(): JSX.Element {
                     {runtimeConfig !== null && activeTab === 'factors' ? (
                         <ErrorBoundary>
                             <FactorsTab config={runtimeConfig} />
+                        </ErrorBoundary>
+                    ) : null}
+
+                    {basketId !== null && activeTab === 'positions' ? (
+                        <ErrorBoundary>
+                            <PositionsTab basketId={basketId} />
                         </ErrorBoundary>
                     ) : null}
                 </section>

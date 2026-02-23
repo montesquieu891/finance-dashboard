@@ -27,4 +27,5 @@ export const TAB_OPTIONS: Array<{ id: TabId; label: string }> = [
     { id: 'risk', label: 'Risk' },
     { id: 'correlation', label: 'Correlation' },
     { id: 'factors', label: 'Factors' },
+    { id: 'positions', label: 'Positions' },
 ]

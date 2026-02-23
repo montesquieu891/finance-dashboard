@@ -1,5 +1,6 @@
 from app.models.base import Base
 from app.models.data import (
+    AlertRule,
     Basket,
     BasketLeg,
     Factor,
@@ -8,6 +9,7 @@ from app.models.data import (
     IngestionLog,
     Instrument,
     PriceDaily,
+    RealPosition,
     ReturnDaily,
 )
 
@@ -20,6 +22,8 @@ __all__ = [
     "IngestionLog",
     "Basket",
     "BasketLeg",
+    "AlertRule",
+    "RealPosition",
     "Factor",
     "FactorDefinition",
 ]
